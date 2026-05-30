@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import attendanceRouter from './routes/attendance.js';
@@ -19,16 +18,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-    console.warn('Server will run but database features may be unavailable');
-  });
-
 app.use('/api', attendanceRouter);
 
 app.get('/', (req, res) => {
@@ -41,4 +30,6 @@ app.get('/dashboard', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://127.0.0.1:${PORT}`);
+  console.log(`Dashboard: http://127.0.0.1:${PORT}/dashboard`);
+  console.log(`Attendance: http://127.0.0.1:${PORT}/`);
 });

@@ -1,35 +1,16 @@
 import express from 'express';
-import Student from '../models/Student.js';
+import { createClient } from '@supabase/supabase-js';
 
 const router = express.Router();
 
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
+
 const isValidSession = (session) => /^[1-8]$/.test(String(session));
 
-const normalizeStudent = (student) => {
-  const sessions = [];
-  const times = [];
-
-  for (let i = 1; i <= 8; i++) {
-    sessions.push(Boolean(student.sessions[`S${i}`]));
-    const time = student.times[`T${i}`];
-    times.push(time ? time.toISOString() : '');
-  }
-
-  return {
-    id: student.id,
-    name: student.name,
-    phone: student.phone || '',
-    sessions,
-    times
-  };
-};
-
 router.get('/register', async (req, res) => {
-  const action = req.query.action;
-  if (action && action !== 'register') {
-    return res.json({ success: false, message: 'Action غير معتمد' });
-  }
-
   const id = (req.query.id || '').trim().toUpperCase();
   const session = req.query.session || '1';
 
@@ -42,15 +23,20 @@ router.get('/register', async (req, res) => {
   }
 
   try {
-    const student = await Student.findOne({ id });
-    if (!student) {
+    const { data: student, error: fetchError } = await supabase
+      .from('students')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !student) {
       return res.json({ success: false, message: 'المعرف غير موجود.' });
     }
 
-    const sessionKey = `S${session}`;
-    const timeKey = `T${session}`;
+    const sessionKey = `s${session}`;
+    const timeKey = `t${session}`;
 
-    if (student.sessions[sessionKey]) {
+    if (student[sessionKey]) {
       return res.json({
         success: false,
         already: true,
@@ -59,15 +45,21 @@ router.get('/register', async (req, res) => {
       });
     }
 
-    student.sessions[sessionKey] = true;
-    student.times[timeKey] = new Date();
-    await student.save();
+    const { error: updateError } = await supabase
+      .from('students')
+      .update({
+        [sessionKey]: true,
+        [timeKey]: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
 
     return res.json({
       success: true,
       already: false,
       name: student.name,
-      time: student.times[timeKey]
+      time: new Date().toISOString()
     });
   } catch (error) {
     console.error('Attendance register error:', error);
@@ -77,19 +69,30 @@ router.get('/register', async (req, res) => {
 
 router.get('/students', async (req, res) => {
   const query = (req.query.search || '').trim();
-  const filter = {};
-
-  if (query) {
-    const regex = new RegExp(query, 'i');
-    filter.$or = [{ id: regex }, { name: regex }];
-  }
 
   try {
-    const students = await Student.find(filter).sort({ name: 1 });
-    return res.json({ success: true, data: students.map(normalizeStudent) });
+    let request = supabase.from('students').select('*');
+
+    if (query) {
+      request = request.or(`id.ilike.%${query}%,name.ilike.%${query}%`);
+    }
+
+    const { data: students, error } = await request.order('name');
+
+    if (error) throw error;
+
+    const normalized = students.map((s) => ({
+      id: s.id,
+      name: s.name,
+      phone: s.phone || '',
+      sessions: [s.s1, s.s2, s.s3, s.s4, s.s5, s.s6, s.s7, s.s8],
+      times: [s.t1, s.t2, s.t3, s.t4, s.t5, s.t6, s.t7, s.t8]
+    }));
+
+    return res.json({ success: true, data: normalized });
   } catch (error) {
     console.error('Fetch students error:', error);
-    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء جلب بيانات الطلاب.' });
+    return res.status(500).json({ success: false, message: 'حدث خطأ في جلب البيانات.' });
   }
 });
 
@@ -103,23 +106,24 @@ router.post('/students', async (req, res) => {
   }
 
   try {
-    const existing = await Student.findOne({ id });
-    if (existing) {
-      return res.status(409).json({ success: false, message: 'هذا الـ ID موجود بالفعل.' });
-    }
+    const { error } = await supabase.from('students').insert([
+      {
+        id,
+        name,
+        phone,
+        s1: false, s2: false, s3: false, s4: false,
+        s5: false, s6: false, s7: false, s8: false,
+        t1: null, t2: null, t3: null, t4: null,
+        t5: null, t6: null, t7: null, t8: null
+      }
+    ]);
 
-    const sessions = {};
-    const times = {};
-    for (let i = 1; i <= 8; i++) {
-      sessions[`S${i}`] = false;
-      times[`T${i}`] = null;
-    }
+    if (error) throw error;
 
-    const student = await Student.create({ id, name, phone, sessions, times });
-    return res.json({ success: true, data: normalizeStudent(student) });
+    return res.json({ success: true, data: { id, name, phone, sessions: [false, false, false, false, false, false, false, false], times: [null, null, null, null, null, null, null, null] } });
   } catch (error) {
     console.error('Create student error:', error);
-    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء إضافة الطالب.' });
+    return res.status(500).json({ success: false, message: 'حدث خطأ في إضافة الطالب.' });
   }
 });
 
@@ -134,34 +138,27 @@ router.put('/students/:id', async (req, res) => {
   }
 
   try {
-    const student = await Student.findOne({ id });
-    if (!student) {
-      return res.status(404).json({ success: false, message: 'الطالب غير موجود.' });
-    }
-
-    student.name = name;
-    student.phone = phone;
-
-    for (let i = 1; i <= 8; i++) {
-      const key = `S${i}`;
-      const timeKey = `T${i}`;
-      const currentValue = Boolean(student.sessions[key]);
-      const nextValue = Boolean(sessions[i - 1]);
-
-      if (nextValue && !currentValue) {
-        student.sessions[key] = true;
-        student.times[timeKey] = new Date();
-      } else if (!nextValue) {
-        student.sessions[key] = false;
-        student.times[timeKey] = null;
+    const updateData = { name, phone };
+    for (let i = 0; i < 8; i++) {
+      updateData[`s${i + 1}`] = Boolean(sessions[i]);
+      if (sessions[i]) {
+        updateData[`t${i + 1}`] = new Date().toISOString();
+      } else {
+        updateData[`t${i + 1}`] = null;
       }
     }
 
-    await student.save();
-    return res.json({ success: true, data: normalizeStudent(student) });
+    const { error } = await supabase
+      .from('students')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return res.json({ success: true, data: { id, name, phone, sessions, times: [] } });
   } catch (error) {
     console.error('Update student error:', error);
-    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء حفظ بيانات الطالب.' });
+    return res.status(500).json({ success: false, message: 'حدث خطأ في تحديث الطالب.' });
   }
 });
 
@@ -169,14 +166,14 @@ router.delete('/students/:id', async (req, res) => {
   const id = (req.params.id || '').trim().toUpperCase();
 
   try {
-    const result = await Student.deleteOne({ id });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ success: false, message: 'الطالب غير موجود.' });
-    }
+    const { error } = await supabase.from('students').delete().eq('id', id);
+
+    if (error) throw error;
+
     return res.json({ success: true });
   } catch (error) {
     console.error('Delete student error:', error);
-    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء حذف الطالب.' });
+    return res.status(500).json({ success: false, message: 'حدث خطأ في حذف الطالب.' });
   }
 });
 
