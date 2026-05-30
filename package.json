@@ -1,0 +1,13 @@
+{
+  "name": "inspire-attendance",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "cd server && npm start",
+    "dev": "cd server && npm run dev",
+    "postinstall": "cd server && npm install"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}

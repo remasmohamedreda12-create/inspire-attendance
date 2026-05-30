@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم الحضور - INSPIRE</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%239333ea' width='100' height='100' rx='15'/><text x='50' y='65' font-size='55' font-weight='bold' text-anchor='middle' fill='white' font-family='Arial'>📊</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Almarai:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Almarai', 'Cairo', sans-serif;
+      background: linear-gradient(135deg, #0a0014 0%, #1a0033 50%, #0f001a 100%);
+      min-height: 100vh;
+      padding: 20px;
+      background-attachment: fixed;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      padding: 30px;
+      background: rgba(15, 8, 30, 0.85);
+      border-radius: 20px;
+      border: 1px solid rgba(147, 51, 234, 0.25);
+      backdrop-filter: blur(15px);
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .header-title h1 {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #e0b3ff 0%, #b78cf0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-title .logo {
+      font-size: 40px;
+      color: #9333ea;
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: rgba(147, 51, 234, 0.1);
+      padding: 15px 25px;
+      border-radius: 12px;
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      text-align: center;
+    }
+
+    .stat-card .number {
+      font-size: 24px;
+      font-weight: 700;
+      color: #b78cf0;
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: #8a7fa8;
+      margin-top: 5px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+      padding: 12px 18px;
+      background: rgba(147, 51, 234, 0.08);
+      border: 2px solid rgba(147, 51, 234, 0.25);
+      border-radius: 12px;
+      color: #e0b3ff;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: #9333ea;
+      background: rgba(147, 51, 234, 0.18);
+    }
+
+    .search-box::placeholder {
+      color: #8a6fb8;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #9333ea 0%, #b78cf0 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Almarai', sans-serif;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(147, 51, 234, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(147, 51, 234, 0.2);
+      color: #b78cf0;
+      border: 1px solid rgba(147, 51, 234, 0.4);
+      padding: 8px 14px;
+      font-size: 12px;
+      gap: 4px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(147, 51, 234, 0.3);
+    }
+
+    .btn-danger {
+      background: rgba(234, 67, 53, 0.2);
+      color: #ea4335;
+      border: 1px solid rgba(234, 67, 53, 0.4);
+    }
+
+    .btn-danger:hover {
+      background: rgba(234, 67, 53, 0.3);
+    }
+
+    .table-wrapper {
+      background: rgba(15, 8, 30, 0.85);
+      border-radius: 16px;
+      border: 1px solid rgba(147, 51, 234, 0.25);
+      overflow-x: auto;
+      backdrop-filter: blur(15px);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead {
+      background: rgba(147, 51, 234, 0.15);
+      border-bottom: 2px solid rgba(147, 51, 234, 0.25);
+      position: sticky;
+      top: 0;
+    }
+
+    th {
+      padding: 16px;
+      text-align: right;
+      color: #b78cf0;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(147, 51, 234, 0.1);
+      color: #d0d0e8;
+    }
+
+    tbody tr {
+      transition: background 0.3s;
+    }
+
+    tbody tr:hover {
+      background: rgba(147, 51, 234, 0.08);
+    }
+
+    .attendance-cell {
+      text-align: center;
+      font-weight: 600;
+      position: relative;
+      cursor: help;
+    }
+
+    .attendance-true {
+      color: #34a853;
+    }
+
+    .attendance-false {
+      color: #8a7fa8;
+    }
+
+    .count-badge {
+      display: inline-block;
+      background: rgba(147, 51, 234, 0.2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      color: #b78cf0;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .attendance-time {
+      font-size: 11px;
+      color: #8a7fa8;
+      margin-top: 2px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: rgba(15, 8, 30, 0.95);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 600px;
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-content h2 {
+      color: #b78cf0;
+      margin-bottom: 25px;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: right;
+    }
+
+    .form-group label {
+      display: block;
+      color: #a882d8;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      background: rgba(147, 51, 234, 0.08);
+      border: 2px solid rgba(147, 51, 234, 0.25);
+      border-radius: 10px;
+      color: #e0b3ff;
+      font-family: 'Almarai', sans-serif;
+      font-size: 14px;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #9333ea;
+      background: rgba(147, 51, 234, 0.18);
+    }
+
+    .sessions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .session-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: rgba(147, 51, 234, 0.08);
+      border: 1px solid rgba(147, 51, 234, 0.2);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .session-check input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: #9333ea;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+    }
+
+    .modal-buttons button {
+      flex: 1;
+    }
+
+    .close-btn {
+      background: rgba(147, 51, 234, 0.2);
+      color: #b78cf0;
+      border: 1px solid rgba(147, 51, 234, 0.4);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #8a7fa8;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 15px;
+      color: #9333ea;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .header-title h1 {
+        font-size: 24px;
+      }
+
+      .controls {
+        flex-direction: column;
+      }
+
+      .search-box {
+        width: 100%;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 10px 8px;
+      }
+
+      .modal-content {
+        padding: 25px;
+      }
+
+      .sessions-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="header-title">
+      <div class="logo"><i class="fas fa-chart-bar"></i></div>
+      <div>
+        <h1>لوحة التحكم</h1>
+        <p style="color: #8a7fa8; font-size: 13px; margin-top: 5px;">إدارة الحضور والطلاب</p>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-card">
+        <div class="number" id="totalStudents">0</div>
+        <div class="label">إجمالي الطلاب</div>
+      </div>
+      <div class="stat-card">
+        <div class="number" id="totalAttendance">0</div>
+        <div class="label">تسجيلات</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input type="text" class="search-box" id="searchBox" placeholder="ابحث عن الطالب (ID أو الاسم)...">
+    <button class="btn" onclick="openAddModal()"><i class="fas fa-plus"></i> إضافة طالب</button>
+    <button class="btn btn-secondary" onclick="exportData()"><i class="fas fa-download"></i> تصدير</button>
+  </div>
+
+  <div class="table-wrapper">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>الـ ID</th>
+          <th>الاسم</th>
+          <th>الهاتف</th>
+          <th>S1</th>
+          <th>S2</th>
+          <th>S3</th>
+          <th>S4</th>
+          <th>S5</th>
+          <th>S6</th>
+          <th>S7</th>
+          <th>S8</th>
+          <th>المجموع</th>
+          <th>الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal" id="addModal">
+  <div class="modal-content">
+    <h2><i class="fas fa-user-plus"></i> إضافة طالب جديد</h2>
+    <div class="form-group">
+      <label>الـ ID</label>
+      <input type="text" id="newID" placeholder="مثال: ABC123" maxlength="20">
+    </div>
+    <div class="form-group">
+      <label>الاسم</label>
+      <input type="text" id="newName" placeholder="اسم الطالب كاملاً">
+    </div>
+    <div class="form-group">
+      <label>الهاتف (اختياري)</label>
+      <input type="tel" id="newPhone" placeholder="رقم الهاتف">
+    </div>
+    <div class="modal-buttons">
+      <button class="btn close-btn" onclick="closeAddModal()">إلغاء</button>
+      <button class="btn" onclick="addStudent()">إضافة</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <h2><i class="fas fa-user-edit"></i> تعديل بيانات الطالب</h2>
+    <div class="form-group">
+      <label>الـ ID</label>
+      <input type="text" id="editID" placeholder="الـ ID" disabled style="opacity: 0.6;">
+    </div>
+    <div class="form-group">
+      <label>الاسم</label>
+      <input type="text" id="editName" placeholder="اسم الطالب كاملاً">
+    </div>
+    <div class="form-group">
+      <label>الهاتف</label>
+      <input type="tel" id="editPhone" placeholder="رقم الهاتف">
+    </div>
+    <div class="form-group">
+      <label>حالة الجلسات</label>
+      <div class="sessions-grid">
+        <div class="session-check">
+          <input type="checkbox" id="editS1" value="0">
+          <label for="editS1" style="margin: 0; cursor: pointer;">S1</label>
+        </div>
+        <div class="session-check">
+          <input type="checkbox" id="editS2" value="1">
+          <label for="editS2" style="margin: 0; cursor: pointer;">S2</label>
+        </div>
+        <div class="session-check">
+          <input type="checkbox" id="editS3" value="2">
+          <label for="editS3" style="margin: 0; cursor: pointer;">S3</label>
+        </div>
+        <div class="session-check">
+          <input type="checkbox" id="editS4" value="3">
+          <label for="editS4" style="margin: 0; cursor: pointer;">S4</label>
+        </div>
+        <div class="session-check">
+          <input type="checkbox" id="editS5" value="4">
+          <label for="editS5" style="margin: 0; cursor: pointer;">S5</label>
+        </div>
+        <div class="session-check">
+          <input type="checkbox" id="editS6" value="5">
+          <label for="editS6" style="margin: 0; cursor: pointer;">S6</label>
+        </div>
+        <div class="session-check">
+          <input type="checkbox" id="editS7" value="6">
+          <label for="editS7" style="margin: 0; cursor: pointer;">S7</label>
+        </div>
+        <div class="session-check">
+          <input type="checkbox" id="editS8" value="7">
+          <label for="editS8" style="margin: 0; cursor: pointer;">S8</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn close-btn" onclick="closeEditModal()">إلغاء</button>
+      <button class="btn btn-danger" onclick="deleteStudent()" style="flex: 0.5;">
+        <i class="fas fa-trash"></i> حذف
+      </button>
+      <button class="btn" onclick="saveStudent()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SCRIPT_URL = '/api/students';
+  
+  let students = [];
+  let editingStudentId = null;
+
+  function updateStats() {
+    const totalStudents = students.length;
+    const totalAttendance = students.reduce((sum, s) => sum + s.sessions.filter(Boolean).length, 0);
+    document.getElementById('totalStudents').textContent = totalStudents;
+    document.getElementById('totalAttendance').textContent = totalAttendance;
+  }
+
+  function renderTable(data = students) {
+    const tbody = document.getElementById('tableBody');
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="14" style="text-align: center; padding: 40px;"><div class="empty-state"><i class="fas fa-inbox"></i><p>لا يوجد طلاب حتى الآن</p></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.map((student, index) => {
+      const count = student.sessions.filter(Boolean).length;
+      const percentage = Math.round((count / 8) * 100);
+      return `<tr><td>${index + 1}</td><td><strong>${student.id}</strong></td><td>${student.name}</td><td>${student.phone}</td>${student.sessions.map((s, i) => {
+        const timeStr = s && student.times[i] ? `<div class="attendance-time">${student.times[i].substring(11, 16)}</div>` : '';
+        return `<td class="attendance-cell ${s ? 'attendance-true' : 'attendance-false'}" title="${s && student.times[i] ? student.times[i] : ''}">${s ? '<i class="fas fa-check-circle"></i>' : '✗'}${timeStr}</td>`;
+      }).join('')}<td><span class="count-badge">${count}/8 (${percentage}%)</span></td><td><button class="btn btn-secondary" onclick="editStudent('${student.id}')" title="تعديل"><i class="fas fa-edit"></i></button></td></tr>`;
+    }).join('');
+    updateStats();
+  }
+
+  async function loadData() {
+    try {
+      const response = await fetch(SCRIPT_URL);
+      const data = await response.json();
+      if (data.success) {
+        students = data.data;
+        students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+        renderTable();
+      }
+    } catch (error) {
+      console.error('خطأ الاتصال:', error);
+    }
+  }
+
+  document.getElementById('searchBox').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    const filtered = students.filter(s => s.id.toLowerCase().includes(query) || s.name.toLowerCase().includes(query));
+    renderTable(filtered);
+  });
+
+  function openAddModal() {
+    document.getElementById('addModal').classList.add('active');
+    document.getElementById('newID').value = '';
+    document.getElementById('newName').value = '';
+    document.getElementById('newPhone').value = '';
+  }
+
+  function closeAddModal() {
+    document.getElementById('addModal').classList.remove('active');
+  }
+
+  function editStudent(id) {
+    const student = students.find(s => s.id === id);
+    if (!student) return;
+    editingStudentId = id;
+    document.getElementById('editID').value = student.id;
+    document.getElementById('editName').value = student.name;
+    document.getElementById('editPhone').value = student.phone;
+    for (let i = 0; i < 8; i++) {
+      document.getElementById(`editS${i + 1}`).checked = student.sessions[i];
+    }
+    document.getElementById('editModal').classList.add('active');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('active');
+    editingStudentId = null;
+  }
+
+  async function addStudent() {
+    const id = document.getElementById('newID').value.trim().toUpperCase();
+    const name = document.getElementById('newName').value.trim();
+    const phone = document.getElementById('newPhone').value.trim();
+    if (!id || !name) { alert('الرجاء ملء البيانات'); return; }
+    if (students.find(s => s.id === id)) { alert('❌ الـ ID موجود بالفعل'); return; }
+
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, name, phone })
+      });
+      const result = await response.json();
+      if (!result.success) {
+        alert(result.message || '❌ خطأ في الإضافة');
+        return;
+      }
+      await loadData();
+      closeAddModal();
+      alert('✅ تم إضافة الطالب!');
+    } catch (error) {
+      console.error(error);
+      alert('❌ خطأ في الاتصال');
+    }
+  }
+
+  async function saveStudent() {
+    if (!editingStudentId) return;
+    const name = document.getElementById('editName').value.trim();
+    const phone = document.getElementById('editPhone').value.trim();
+    if (!name) { alert('الرجاء إدخال الاسم'); return; }
+
+    const sessions = [];
+    for (let i = 0; i < 8; i++) {
+      sessions.push(document.getElementById(`editS${i + 1}`).checked);
+    }
+
+    try {
+      const response = await fetch(`${SCRIPT_URL}/${editingStudentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, sessions })
+      });
+      const result = await response.json();
+      if (!result.success) {
+        alert(result.message || '❌ خطأ في الحفظ');
+        return;
+      }
+      await loadData();
+      closeEditModal();
+      alert('✅ تم حفظ التعديلات!');
+    } catch (error) {
+      console.error(error);
+      alert('❌ خطأ في الاتصال');
+    }
+  }
+
+  async function deleteStudent() {
+    if (!editingStudentId) return;
+    if (!confirm('⚠️ هل أنت متأكد؟')) return;
+
+    try {
+      const response = await fetch(`${SCRIPT_URL}/${editingStudentId}`, {
+        method: 'DELETE'
+      });
+      const result = await response.json();
+      if (!result.success) {
+        alert(result.message || '❌ خطأ في الحذف');
+        return;
+      }
+      students = students.filter(s => s.id !== editingStudentId);
+      renderTable();
+      closeEditModal();
+      alert('✅ تم حذف الطالب!');
+    } catch (error) {
+      console.error(error);
+      alert('❌ خطأ في الاتصال');
+    }
+  }
+
+  function exportData() {
+    let csv = 'ID,الاسم,الهاتف,S1,S2,S3,S4,S5,S6,S7,S8,المجموع,النسبة\n';
+    students.forEach(s => {
+      const count = s.sessions.filter(Boolean).length;
+      const percentage = Math.round((count / 8) * 100);
+      csv += `${s.id},"${s.name}","${s.phone}",${s.sessions.map(x => x ? '✓' : '✗').join(',')},${count},${percentage}%\n`;
+    });
+    const link = document.createElement('a');
+    link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    link.download = 'attendance_' + new Date().toISOString().split('T')[0] + '.csv';
+    link.click();
+  }
+
+  window.addEventListener('load', () => {
+    loadData();
+    setInterval(loadData, 10000);
+  });
+</script>
+
+</body>
+</html>
